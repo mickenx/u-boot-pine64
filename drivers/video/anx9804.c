@@ -18,6 +18,16 @@
 
 #define ANX9804_HDCP_CONTROL_0_REG				0x01
 
+#define ANX9804_SYS_CTRL1_REG					0x80
+#define ANX9804_SYS_CTRL1_PD_IO					0x80
+#define ANX9804_SYS_CTRL1_PD_VID				0x40
+#define ANX9804_SYS_CTRL1_PD_LINK				0x20
+#define ANX9804_SYS_CTRL1_PD_TOTAL				0x10
+#define ANX9804_SYS_CTRL1_MODE_SEL				0x08
+#define ANX9804_SYS_CTRL1_DET_STA				0x04
+#define ANX9804_SYS_CTRL1_FORCE_DET				0x02
+#define ANX9804_SYS_CTRL1_DET_CTRL				0x01
+
 #define ANX9804_SYS_CTRL2_REG					0x81
 #define ANX9804_SYS_CTRL2_CHA_STA				0x04
 
@@ -81,6 +91,7 @@
 void anx9804_init(unsigned int i2c_bus, u8 lanes, u8 data_rate, int bpp)
 {
 	unsigned int orig_i2c_bus = i2c_get_bus_num();
+	u8 chipid;
 	u8 c, colordepth;
 	int i;
 
@@ -100,11 +111,19 @@ void anx9804_init(unsigned int i2c_bus, u8 lanes, u8 data_rate, int bpp)
 	i2c_reg_write(0x39, ANX9804_POWERD_CTRL_REG, 0);
 
 	c = i2c_reg_read(0x39, ANX9804_DEV_IDH_REG);
-	if (c != 0x98) {
-		printf("Error anx9804 chipid mismatch\n");
+	switch(c) {
+	case 0x98:
+		printf("ANX98xx detected.\n");
+		break;
+	case 0x63:
+		printf("ANX63xx detected.\n");
+		break;
+	default:
+		printf("Error anx9804 or anx6345 chipid mismatch\n");
 		i2c_set_bus_num(orig_i2c_bus);
 		return;
 	}
+	chipid = c;
 
 	for (i = 0; i < 100; i++) {
 		c = i2c_reg_read(0x38, ANX9804_SYS_CTRL2_REG);
@@ -121,15 +140,20 @@ void anx9804_init(unsigned int i2c_bus, u8 lanes, u8 data_rate, int bpp)
 	i2c_reg_write(0x39, ANX9804_VID_CTRL2_REG, colordepth);
 	
 	/* Set a bunch of analog related register values */
-	i2c_reg_write(0x38, ANX9804_PLL_CTRL_REG, 0x07); 
-	i2c_reg_write(0x39, ANX9804_PLL_FILTER_CTRL3, 0x19); 
-	i2c_reg_write(0x39, ANX9804_PLL_CTRL3, 0xd9); 
-	i2c_reg_write(0x39, ANX9804_RST_CTRL2_REG, ANX9804_RST_CTRL2_AC_MODE);
-	i2c_reg_write(0x39, ANX9804_ANALOG_DEBUG_REG1, 0xf0);
-	i2c_reg_write(0x39, ANX9804_ANALOG_DEBUG_REG3, 0x99);
-	i2c_reg_write(0x39, ANX9804_PLL_FILTER_CTRL1, 0x7b);
+	if (chipid == 0x98) {
+		i2c_reg_write(0x38, ANX9804_PLL_CTRL_REG, 0x07);
+		i2c_reg_write(0x39, ANX9804_PLL_FILTER_CTRL3, 0x19);
+		i2c_reg_write(0x39, ANX9804_PLL_CTRL3, 0xd9);
+		i2c_reg_write(0x39, ANX9804_RST_CTRL2_REG, ANX9804_RST_CTRL2_AC_MODE);
+		i2c_reg_write(0x39, ANX9804_ANALOG_DEBUG_REG1, 0xf0);
+		i2c_reg_write(0x39, ANX9804_ANALOG_DEBUG_REG3, 0x99);
+		i2c_reg_write(0x39, ANX9804_PLL_FILTER_CTRL1, 0x7b);
+		i2c_reg_write(0x39, ANX9804_PLL_FILTER_CTRL, 0x06);
+	} else {
+		i2c_reg_write(0x38, ANX9804_PLL_CTRL_REG, 0x00);
+		i2c_reg_write(0x39, ANX9804_ANALOG_DEBUG_REG1, 0x70);
+	}
 	i2c_reg_write(0x38, ANX9804_LINK_DEBUG_REG, 0x30);
-	i2c_reg_write(0x39, ANX9804_PLL_FILTER_CTRL, 0x06);
 
 	/* Force HPD */
 	i2c_reg_write(0x38, ANX9804_SYS_CTRL3_REG,
@@ -143,10 +167,18 @@ void anx9804_init(unsigned int i2c_bus, u8 lanes, u8 data_rate, int bpp)
 	i2c_reg_write(0x38, ANX9804_TRAINING_LANE3_SET_REG, 0x00);
 
 	/* Reset AUX CH */
-	i2c_reg_write(0x39, ANX9804_RST_CTRL2_REG,
-		      ANX9804_RST_CTRL2_AC_MODE | ANX9804_RST_CTRL2_AUX);
-	i2c_reg_write(0x39, ANX9804_RST_CTRL2_REG,
-		      ANX9804_RST_CTRL2_AC_MODE);
+	if (chipid == 0x98) {
+		i2c_reg_write(0x39, ANX9804_RST_CTRL2_REG,
+			      ANX9804_RST_CTRL2_AC_MODE |
+			      ANX9804_RST_CTRL2_AUX);
+		i2c_reg_write(0x39, ANX9804_RST_CTRL2_REG,
+			      ANX9804_RST_CTRL2_AC_MODE);
+
+	} else {
+		i2c_reg_write(0x39, ANX9804_RST_CTRL2_REG,
+			      ANX9804_RST_CTRL2_AUX);
+		i2c_reg_write(0x39, ANX9804_RST_CTRL2_REG, 0);
+	}
 
 	/* Powerdown audio and some other unused bits */
 	i2c_reg_write(0x39, ANX9804_POWERD_CTRL_REG, ANX9804_POWERD_AUDIO);
@@ -163,7 +195,8 @@ void anx9804_init(unsigned int i2c_bus, u8 lanes, u8 data_rate, int bpp)
 	mdelay(5);
 	for (i = 0; i < 100; i++) {
 		c = i2c_reg_read(0x38, ANX9804_LINK_TRAINING_CTRL_REG);
-		if ((c & 0x01) == 0)
+		if (((chipid == 0x98) && (c & 0x01) == 0) ||
+		    ((chipid == 0x63) && (c & 0x80) == 0))
 			break;
 
 		mdelay(5);
