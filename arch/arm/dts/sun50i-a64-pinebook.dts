@@ -50,6 +50,7 @@
 
 	aliases {
 		serial0 = &uart0;
+		i2c0 = "/i2c_gpio@0";
 	};
 
 	chosen {
@@ -58,5 +59,54 @@
 
 	memory {
 		reg = <0x40000000 0x40000000>;
+	};
+
+	soc {
+		/*pio {
+			i2c_lcd_pins: i2c_lcd_pins {
+				pins = "PL9", "PL8";
+				function = "gpio_out";
+				drive-strength = <30>;
+				bias-pull-up;
+			};
+		};*/
+
+		i2c_gpio@0 {
+			compatible = "i2c-gpio";
+			/*pinctrl-names = "default";
+			pinctrl-0 = <&i2c_lcd_pins>;*/
+			gpios = <&r_pio 0 9 GPIO_ACTIVE_HIGH>, /* sda - PL9 */ 
+				<&r_pio 0 8 GPIO_ACTIVE_HIGH>; /* scl - PL8 */
+			i2c-gpio,sda-open-drain;
+			i2c-gpio,scl-open-drain;
+			i2c-gpio,delay-us = <2>;	/* ~100 kHz */
+			#address-cells = <1>;
+			#size-cells = <0>;
+			status = "okay";
+
+			anx6345: edp-bridge@20 {
+				compatible = "analogix,anx6345";
+				reg = <0x38>;
+				sleep-gpios = <&pio 3 24 GPIO_ACTIVE_HIGH>; /* PD24 */
+				reset-gpios = <&pio 7 6 GPIO_ACTIVE_HIGH>; /* PH6 */
+				status = "okay";
+
+				/*
+				ports {
+					port@0 {
+						bridge_out: endpoint {
+							remote-endpoint = <&panel_in>;
+						};
+					};
+
+					port@1 {
+						bridge_in: endpoint {
+							remote-endpoint = <&rgb_out>;
+						};
+					};
+				};
+				*/
+			};
+		};
 	};
 };

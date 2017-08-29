@@ -68,6 +68,10 @@ struct mm_region *mem_map = sunxi_mem_map;
 
 static int gpio_init(void)
 {
+	sunxi_gpio_set_cfgpin(SUNXI_GPL(8), SUNXI_GPIO_OUTPUT);
+	sunxi_gpio_set_pull(SUNXI_GPL(8), SUNXI_GPIO_PULL_UP);
+	sunxi_gpio_set_cfgpin(SUNXI_GPL(9), SUNXI_GPIO_OUTPUT);
+	sunxi_gpio_set_pull(SUNXI_GPL(9), SUNXI_GPIO_PULL_UP);
 #if CONFIG_CONS_INDEX == 1 && defined(CONFIG_UART0_PORT_F)
 #if defined(CONFIG_MACH_SUN4I) || \
     defined(CONFIG_MACH_SUN7I) || \

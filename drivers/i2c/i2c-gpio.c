@@ -1,3 +1,4 @@
+#define DEBUG 1
 /*
  * (C) Copyright 2015, Samsung Electronics
  * Przemyslaw Marczak <p.marczak@samsung.com>

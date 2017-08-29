@@ -1,3 +1,4 @@
+#define DEBUG 1
 /*
  * Allwinner DE2 display driver
  *
@@ -231,6 +232,23 @@ static int sunxi_de2_probe(struct udevice *dev)
 	/* Before relocation we don't need to do anything */
 	if (!(gd->flags & GD_FLG_RELOC))
 		return 0;
+
+	ret = uclass_find_device_by_name(UCLASS_DISPLAY,
+					 "sunxi_lcd", &disp);
+	if (!ret) {
+		int mux;
+
+		mux = 0;
+
+		ret = sunxi_de2_init(dev, plat->base, VIDEO_BPP32, disp, mux,
+		                     false);
+		if (!ret) {
+			video_set_flush_dcache(dev, 1);
+			return 0;
+		}
+	}
+
+	debug("%s: lcd display not found (ret=%d)\n", __func__, ret);
 
 	ret = uclass_find_device_by_name(UCLASS_DISPLAY,
 					 "sunxi_dw_hdmi", &disp);

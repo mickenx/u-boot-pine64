@@ -243,6 +243,7 @@ int axp_init(void)
 	return 0;
 }
 
+#if 0
 int do_poweroff(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	pmic_bus_write(AXP803_SHUTDOWN, AXP803_SHUTDOWN_POWEROFF);
@@ -254,3 +255,4 @@ int do_poweroff(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	/* not reached */
 	return 0;
 }
+#endif
