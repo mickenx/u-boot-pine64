@@ -1,3 +1,4 @@
+#define DEBUG
 /*
  * Copyright (C) 2015 Google, Inc
  * Written by Simon Glass <sjg@chromium.org>
@@ -100,15 +101,17 @@ int video_bridge_set_active(struct udevice *dev, bool active)
 	int ret;
 
 	debug("%s: %d\n", __func__, active);
-	ret = dm_gpio_set_value(&uc_priv->sleep, !active);
+	ret = dm_gpio_set_value(&uc_priv->sleep, active);
 	if (ret)
 		return ret;
 	if (active) {
+		printf("reset true\n");
 		ret = dm_gpio_set_value(&uc_priv->reset, true);
 		if (ret)
 			return ret;
 		udelay(10);
 		ret = dm_gpio_set_value(&uc_priv->reset, false);
+		printf("reset false\n");
 	}
 
 	return ret;

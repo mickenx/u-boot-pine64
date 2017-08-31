@@ -84,7 +84,7 @@ static int anx9804_write(struct udevice *dev, unsigned addr_off,
 	struct i2c_msg msg;
 	int ret;
 
-	msg.addr = chip->chip_addr + addr_off;
+	msg.addr = addr_off;
 	msg.flags = 0;
 	buf[0] = reg_addr;
 	buf[1] = value;
@@ -108,12 +108,12 @@ static int anx9804_read(struct udevice *dev, unsigned addr_off,
 	struct i2c_msg msg[2];
 	int ret;
 
-	msg[0].addr = chip->chip_addr + addr_off;
+	msg[0].addr = addr_off;
 	msg[0].flags = 0;
 	addr = reg_addr;
 	msg[0].buf = &addr;
 	msg[0].len = 1;
-	msg[1].addr = chip->chip_addr + addr_off;
+	msg[1].addr = addr_off;
 	msg[1].flags = I2C_M_RD;
 	msg[1].buf = &val;
 	msg[1].len = 1;
@@ -135,13 +135,15 @@ static int anx9804_set_backlight(struct udevice *dev, int percent)
 
 static int anx9804_attach(struct udevice *dev)
 {
-	const uint8_t *params;
-	struct udevice *reg;
-	int ret;
-	unsigned char c;
+	u8 chipid;
+	int ret, i;
+	u8 c, colordepth;
 
-	debug("%s: %s\n", __func__, dev->name);
+	u8 lanes = 1;
+	u8 data_rate = 0x06; /* 1620M */
+	u8 bpp = 18;
 
+	/* Deassert reset and enable power */
 	ret = video_bridge_set_active(dev, true);
 	if (ret)
 		return ret;
@@ -169,7 +171,102 @@ static int anx9804_attach(struct udevice *dev)
 		printf("Error anx9804 or anx6345 chipid mismatch: %.2x\n", (int)c);
 		return -ENODEV;
 	}
+	chipid = c;
 
+	for (i = 0; i < 100; i++) {
+		anx9804_read(dev, 0x38, ANX9804_SYS_CTRL2_REG, &c);
+		anx9804_write(dev, 0x38, ANX9804_SYS_CTRL2_REG, c);
+		anx9804_read(dev, 0x38, ANX9804_SYS_CTRL2_REG, &c);
+		if ((c & ANX9804_SYS_CTRL2_CHA_STA) == 0)
+			break;
+
+		mdelay(5);
+	}
+	if (i == 100)
+		printf("Error anx9804 clock is not stable\n");
+
+	if (bpp == 18)
+		colordepth = 0x00; /* 6 bit */
+	else
+		colordepth = 0x10; /* 8 bit */
+	anx9804_write(dev, 0x39, ANX9804_VID_CTRL2_REG, colordepth);
+	
+	/* Set a bunch of analog related register values */
+	if (chipid == 0x98) {
+		anx9804_write(dev, 0x38, ANX9804_PLL_CTRL_REG, 0x07);
+		anx9804_write(dev, 0x39, ANX9804_PLL_FILTER_CTRL3, 0x19);
+		anx9804_write(dev, 0x39, ANX9804_PLL_CTRL3, 0xd9);
+		anx9804_write(dev, 0x39, ANX9804_RST_CTRL2_REG, ANX9804_RST_CTRL2_AC_MODE);
+		anx9804_write(dev, 0x39, ANX9804_ANALOG_DEBUG_REG1, 0xf0);
+		anx9804_write(dev, 0x39, ANX9804_ANALOG_DEBUG_REG3, 0x99);
+		anx9804_write(dev, 0x39, ANX9804_PLL_FILTER_CTRL1, 0x7b);
+		anx9804_write(dev, 0x39, ANX9804_PLL_FILTER_CTRL, 0x06);
+	} else {
+		anx9804_write(dev, 0x38, ANX9804_PLL_CTRL_REG, 0x00);
+		anx9804_write(dev, 0x39, ANX9804_ANALOG_DEBUG_REG1, 0x70);
+	}
+	anx9804_write(dev, 0x38, ANX9804_LINK_DEBUG_REG, 0x30);
+
+	/* Force HPD */
+	anx9804_write(dev, 0x38, ANX9804_SYS_CTRL3_REG,
+		      ANX9804_SYS_CTRL3_F_HPD | ANX9804_SYS_CTRL3_HPD_CTRL);
+
+	/* Power up and configure lanes */
+	anx9804_write(dev, 0x38, ANX9804_ANALOG_POWER_DOWN_REG, 0x00);
+	anx9804_write(dev, 0x38, ANX9804_TRAINING_LANE0_SET_REG, 0x00);
+	anx9804_write(dev, 0x38, ANX9804_TRAINING_LANE1_SET_REG, 0x00);
+	anx9804_write(dev, 0x38, ANX9804_TRAINING_LANE2_SET_REG, 0x00);
+	anx9804_write(dev, 0x38, ANX9804_TRAINING_LANE3_SET_REG, 0x00);
+
+	/* Reset AUX CH */
+	if (chipid == 0x98) {
+		anx9804_write(dev, 0x39, ANX9804_RST_CTRL2_REG,
+			      ANX9804_RST_CTRL2_AC_MODE |
+			      ANX9804_RST_CTRL2_AUX);
+		anx9804_write(dev, 0x39, ANX9804_RST_CTRL2_REG,
+			      ANX9804_RST_CTRL2_AC_MODE);
+
+	} else {
+		anx9804_write(dev, 0x39, ANX9804_RST_CTRL2_REG,
+			      ANX9804_RST_CTRL2_AUX);
+		anx9804_write(dev, 0x39, ANX9804_RST_CTRL2_REG, 0);
+	}
+
+	/* Powerdown audio and some other unused bits */
+	anx9804_write(dev, 0x39, ANX9804_POWERD_CTRL_REG, ANX9804_POWERD_AUDIO);
+	anx9804_write(dev, 0x38, ANX9804_HDCP_CONTROL_0_REG, 0x00);
+	anx9804_write(dev, 0x38, 0xa7, 0x00);
+
+	/* Set data-rate / lanes */
+	anx9804_write(dev, 0x38, ANX9804_LINK_BW_SET_REG, data_rate);
+	anx9804_write(dev, 0x38, ANX9804_LANE_COUNT_SET_REG, lanes);
+
+	/* Link training */	
+	anx9804_write(dev, 0x38, ANX9804_LINK_TRAINING_CTRL_REG,
+		      ANX9804_LINK_TRAINING_CTRL_EN);
+	mdelay(5);
+	for (i = 0; i < 100; i++) {
+		anx9804_read(dev, 0x38, ANX9804_LINK_TRAINING_CTRL_REG, &c);
+		if (((chipid == 0x98) && (c & 0x01) == 0) ||
+		    ((chipid == 0x63) && (c & 0x80) == 0))
+			break;
+
+		mdelay(5);
+	}
+	if(i == 100) {
+		printf("Error anx9804 link training timeout\n");
+		return -ENODEV;
+	}
+
+	/* Enable */
+	anx9804_write(dev, 0x39, ANX9804_VID_CTRL1_REG,
+		      ANX9804_VID_CTRL1_VID_EN | ANX9804_VID_CTRL1_EDGE);
+	/* Force stream valid */
+	anx9804_write(dev, 0x38, ANX9804_SYS_CTRL3_REG,
+		      ANX9804_SYS_CTRL3_F_HPD | ANX9804_SYS_CTRL3_HPD_CTRL |
+		      ANX9804_SYS_CTRL3_F_VALID | ANX9804_SYS_CTRL3_VALID_CTRL);
+
+	printf("%s: Init completed!!!\n", __func__);
 	return 0;
 }
 

@@ -100,7 +100,7 @@ void lcdc_tcon0_mode_set(struct sunxi_lcdc_reg * const lcdc,
 	writel(SUNXI_LCDC_TCON0_TIMING_V_TOTAL(total) |
 	       SUNXI_LCDC_TCON0_TIMING_V_BP(bp), &lcdc->tcon0_timing_v);
 
-#ifdef CONFIG_VIDEO_LCD_IF_PARALLEL
+#if defined(CONFIG_VIDEO_LCD_IF_PARALLEL) || defined(CONFIG_VIDEO_DE2)
 	writel(SUNXI_LCDC_X(mode->hsync_len.typ) |
 	       SUNXI_LCDC_Y(mode->vsync_len.typ), &lcdc->tcon0_timing_sync);
 
