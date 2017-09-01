@@ -163,6 +163,7 @@ static void vidconsole_putc(struct stdio_dev *sdev, const char ch)
 	struct udevice *dev = sdev->priv;
 
 	vidconsole_put_char(dev, ch);
+	video_sync(dev->parent);
 }
 
 static void vidconsole_puts(struct stdio_dev *sdev, const char *s)
