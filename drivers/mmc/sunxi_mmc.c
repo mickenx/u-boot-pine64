@@ -227,6 +227,12 @@ static int mmc_config_clock(struct sunxi_mmc_priv *priv, struct mmc *mmc)
 	rval &= ~SUNXI_MMC_CLK_DIVIDER_MASK;
 	writel(rval, &priv->reg->clkcr);
 
+#ifdef CONFIG_MACH_SUN50I
+	/* Run calibration on A64 */
+	if (priv->mmc_no == 2)
+		writel(SUNXI_MMC_CAL_DL_SW_EN, &priv->reg->samp_dl);
+#endif
+
 	/* Re-enable Clock */
 	rval |= SUNXI_MMC_CLK_ENABLE;
 	writel(rval, &priv->reg->clkcr);
