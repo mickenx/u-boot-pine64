@@ -223,6 +223,17 @@ static int mmc_config_clock(struct sunxi_mmc_priv *priv, struct mmc *mmc)
 	rval &= ~SUNXI_MMC_CLK_DIVIDER_MASK;
 	writel(rval, &priv->reg->clkcr);
 
+#ifdef CONFIG_MACH_SUN50I
+	/* A64 needs to run calibration on eMMC controller and we
+	 * have to set delay of zero before starting calibration.
+	 * Allwinner BSP driver sets a delay only in the case of
+	 * using HS400 which is not supported by mainline U-Boot or
+	 * Linux at the moment
+	 */
+	if (priv->mmc_no == 2)
+		writel(SUNXI_MMC_CAL_DL_SW_EN, &priv->reg->samp_dl);
+#endif
+
 	/* Re-enable Clock */
 	rval |= SUNXI_MMC_CLK_ENABLE;
 	writel(rval, &priv->reg->clkcr);
