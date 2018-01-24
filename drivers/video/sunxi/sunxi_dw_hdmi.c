@@ -297,6 +297,7 @@ static int sunxi_dw_hdmi_enable(struct udevice *dev, int panel_bpp,
 		(struct sunxi_hdmi_phy *)(SUNXI_HDMI_BASE + HDMI_PHY_OFFS);
 	struct sunxi_dw_hdmi_priv *priv = dev_get_priv(dev);
 	int ret;
+	u32 val;
 
 	ret = dw_hdmi_enable(&priv->hdmi, edid);
 	if (ret)
@@ -304,12 +305,15 @@ static int sunxi_dw_hdmi_enable(struct udevice *dev, int panel_bpp,
 
 	sunxi_dw_hdmi_lcdc_init(priv->mux, edid, panel_bpp);
 
-	if (edid->flags & DISPLAY_FLAGS_HSYNC_LOW)
-		setbits_le32(&phy->pol, 0x200);
+	val = readl(&phy->pol);
+	val &= ~0x300;
 
-	if (edid->flags & DISPLAY_FLAGS_VSYNC_LOW)
-		setbits_le32(&phy->pol, 0x100);
+	if ((edid->flags & DISPLAY_FLAGS_HSYNC_LOW) ||
+	   !(edid->flags & DISPLAY_FLAGS_INTERLACED)) {
+		val |= 0x300;
+	}
 
+	writel(val, &phy->pol);
 	setbits_le32(&phy->ctrl, 0xf << 12);
 
 	/*
