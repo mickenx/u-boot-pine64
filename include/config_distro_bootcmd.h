@@ -241,28 +241,27 @@
 #define BOOTENV_DEV_NAME_USB \
 	BOOT_TARGET_DEVICES_references_USB_without_CONFIG_CMD_USB
 #endif
-
+#if defined(CONFIG_NETWORKING)
 #if defined(CONFIG_CMD_DHCP)
 #if defined(CONFIG_EFI_LOADER)
-/* http://www.iana.org/assignments/dhcpv6-parameters/dhcpv6-parameters.xml */
 #if defined(CONFIG_ARM64) || defined(__aarch64__)
-#define BOOTENV_EFI_PXE_ARCH "0xb"
-#define BOOTENV_EFI_PXE_VCI "PXEClient:Arch:00011:UNDI:003000"
+//#define BOOTENV_EFI_PXE_ARCH "0xb"
+//#define BOOTENV_EFI_PXE_VCI "PXEClient:Arch:00011:UNDI:003000"
 #elif defined(CONFIG_ARM) || defined(__arm__)
-#define BOOTENV_EFI_PXE_ARCH "0xa"
-#define BOOTENV_EFI_PXE_VCI "PXEClient:Arch:00010:UNDI:003000"
+//#define BOOTENV_EFI_PXE_ARCH "0xa"
+//#define BOOTENV_EFI_PXE_VCI "PXEClient:Arch:00010:UNDI:003000"
 #elif defined(CONFIG_X86) || defined(__x86_64__)
-#define BOOTENV_EFI_PXE_ARCH "0x7"
-#define BOOTENV_EFI_PXE_VCI "PXEClient:Arch:00007:UNDI:003000"
+//#define BOOTENV_EFI_PXE_ARCH "0x7"
+//#define BOOTENV_EFI_PXE_VCI "PXEClient:Arch:00007:UNDI:003000"
 #elif defined(__i386__)
-#define BOOTENV_EFI_PXE_ARCH "0x6"
-#define BOOTENV_EFI_PXE_VCI "PXEClient:Arch:00006:UNDI:003000"
+//#define BOOTENV_EFI_PXE_ARCH "0x6"
+//#define BOOTENV_EFI_PXE_VCI "PXEClient:Arch:00006:UNDI:003000"
 #elif defined(CONFIG_CPU_RISCV_32) || ((defined(__riscv) && __riscv_xlen == 32))
-#define BOOTENV_EFI_PXE_ARCH "0x19"
-#define BOOTENV_EFI_PXE_VCI "PXEClient:Arch:00025:UNDI:003000"
+//#define BOOTENV_EFI_PXE_ARCH "0x19"
+//#define BOOTENV_EFI_PXE_VCI "PXEClient:Arch:00025:UNDI:003000"
 #elif defined(CONFIG_CPU_RISCV_64) || ((defined(__riscv) && __riscv_xlen == 64))
-#define BOOTENV_EFI_PXE_ARCH "0x1b"
-#define BOOTENV_EFI_PXE_VCI "PXEClient:Arch:00027:UNDI:003000"
+//#define BOOTENV_EFI_PXE_ARCH "0x1b"
+//#define BOOTENV_EFI_PXE_VCI "PXEClient:Arch:00027:UNDI:003000"
 #elif defined(CONFIG_SANDBOX)
 # error "sandbox EFI support is only supported on ARM and x86"
 #else
@@ -274,6 +273,7 @@
  * device tree in the same folder. Then boot everything. If the file was
  * not an EFI binary, we just return from the bootefi command and continue.
  */
+/*
 #define BOOTENV_EFI_RUN_DHCP \
 	"setenv efi_fdtfile ${fdtfile}; "                                 \
 	BOOTENV_EFI_SET_FDTFILE_FALLBACK                                  \
@@ -294,10 +294,11 @@
 	"setenv efi_fdtfile;"                                             \
 	"setenv efi_old_arch;"                                            \
 	"setenv efi_old_vci;"
+*/
 #else
 #define BOOTENV_EFI_RUN_DHCP
 #endif
-#define BOOTENV_DEV_DHCP(devtypeu, devtypel, instance) \
+/*#define BOOTENV_DEV_DHCP(devtypeu, devtypel, instance) \
 	"bootcmd_dhcp=" \
 		BOOTENV_RUN_NET_USB_START \
 		BOOTENV_RUN_NET_PCI_ENUM \
@@ -308,15 +309,18 @@
 		"\0"
 #define BOOTENV_DEV_NAME_DHCP(devtypeu, devtypel, instance) \
 	"dhcp "
+	*/
 #else
+/*
 #define BOOTENV_DEV_DHCP \
 	BOOT_TARGET_DEVICES_references_DHCP_without_CONFIG_CMD_DHCP
 #define BOOTENV_DEV_NAME_DHCP \
 	BOOT_TARGET_DEVICES_references_DHCP_without_CONFIG_CMD_DHCP
+*/
 #endif
 
 #if defined(CONFIG_CMD_DHCP) && defined(CONFIG_CMD_PXE)
-#define BOOTENV_DEV_PXE(devtypeu, devtypel, instance) \
+/*#define BOOTENV_DEV_PXE(devtypeu, devtypel, instance) \
 	"bootcmd_pxe=" \
 		BOOTENV_RUN_NET_USB_START \
 		BOOTENV_RUN_NET_PCI_ENUM \
@@ -326,17 +330,18 @@
 		"fi\0"
 #define BOOTENV_DEV_NAME_PXE(devtypeu, devtypel, instance) \
 	"pxe "
+*/
 #else
 #define BOOTENV_DEV_PXE \
 	BOOT_TARGET_DEVICES_references_PXE_without_CONFIG_CMD_DHCP_or_PXE
 #define BOOTENV_DEV_NAME_PXE \
 	BOOT_TARGET_DEVICES_references_PXE_without_CONFIG_CMD_DHCP_or_PXE
 #endif
-
-#define BOOTENV_DEV_NAME(devtypeu, devtypel, instance) \
-	BOOTENV_DEV_NAME_##devtypeu(devtypeu, devtypel, instance)
-#define BOOTENV_BOOT_TARGETS \
-	"boot_targets=" BOOT_TARGET_DEVICES(BOOTENV_DEV_NAME) "\0"
+#endif
+//#define BOOTENV_DEV_NAME(devtypeu, devtypel, instance) \
+//	BOOTENV_DEV_NAME_##devtypeu(devtypeu, devtypel, instance)
+//#define BOOTENV_BOOT_TARGETS \
+//	"boot_targets=" BOOT_TARGET_DEVICES(BOOTENV_DEV_NAME) "\0"
 
 #define BOOTENV_DEV(devtypeu, devtypel, instance) \
 	BOOTENV_DEV_##devtypeu(devtypeu, devtypel, instance)

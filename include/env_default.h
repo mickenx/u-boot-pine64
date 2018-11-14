@@ -108,7 +108,7 @@ const uchar default_environment[] = {
 	"bootlimit="	__stringify(CONFIG_BOOTCOUNT_BOOTLIMIT)"\0"
 #endif
 #ifdef	CONFIG_EXTRA_ENV_SETTINGS
-	CONFIG_EXTRA_ENV_SETTINGS
+	//CONFIG_EXTRA_ENV_SETTINGS
 #endif
 	"\0"
 #else /* CONFIG_USE_DEFAULT_ENV_FILE */

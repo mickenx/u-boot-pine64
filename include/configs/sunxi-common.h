@@ -147,7 +147,7 @@
 
 #if CONFIG_MMC_SUNXI_SLOT_EXTRA != -1
 /* If we have two devices (most likely eMMC + MMC), favour the eMMC */
-#define CONFIG_SYS_MMC_ENV_DEV		1
+#define CONFIG_SYS_MMC_ENV_DEV		0
 #else
 /* Otherwise, use the only device we have */
 #define CONFIG_SYS_MMC_ENV_DEV		0

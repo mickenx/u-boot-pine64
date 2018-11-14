@@ -11,6 +11,9 @@
 #include <command.h>
 #include <net.h>
 
+#include <asm/bootm.h>
+#include <asm/secure.h>
+
 #ifdef CONFIG_CMD_GO
 
 /* Allow ports to override the default behavior */
@@ -32,6 +35,10 @@ static int do_go(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	addr = simple_strtoul(argv[1], NULL, 16);
 
 	printf ("## Starting application at 0x%08lX ...\n", addr);
+	armv8_switch_to_el1(0, (u64)0,
+                                    (u64)0, 0,
+                                    (u64)addr,
+                                    ES_TO_AARCH32);
 
 	/*
 	 * pass address parameter as argv[0] (aka command name),

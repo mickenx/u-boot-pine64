@@ -216,7 +216,16 @@ static int sunxi_de2_init(struct udevice *dev, ulong fbbase,
 		debug("%s: Failed to enable display\n", __func__);
 		return ret;
 	}
-
+	printf("hact: %d\n",timing.hactive.typ);//=1024;            
+	printf("hfront porch: %d\n",timing.hfront_porch.typ);//=24;       
+	printf("hback porch: %d\n",timing.hback_porch.typ);//=160;        
+	printf("hsync len: %d\n",timing.hsync_len.typ);//=136;          
+	
+	printf("vacti: %d\n",timing.vactive.typ);//=768;           
+	printf("vfront porch: %d\n",timing.vfront_porch.typ);//=3;       
+	printf("vback porch: %d\n",timing.vback_porch.typ);//=29;        
+	printf("vsync_len: %d\n",timing.vsync_len.typ);//=6;          
+	printf("pixclock: %d\n",timing.pixelclock.typ);
 	uc_priv->xsize = timing.hactive.typ;
 	uc_priv->ysize = timing.vactive.typ;
 	uc_priv->bpix = l2bpp;
